@@ -2,7 +2,7 @@
 
 # Palette Pro for Mac
 
-A native macOS color app built in SwiftUI. Use it to browse 5,500+ Pantone-style swatches, build and save palettes, match any color to its nearest Pantone, and design brand color systems with logo and mockup previews.
+A native macOS color and type app built in SwiftUI. Use it to browse 5,500+ Pantone-style swatches, build and save palettes, match any color to its nearest Pantone, design brand color systems with logo and mockup previews, and find free fonts, pairings and type scales.
 
 ## Install
 
@@ -69,6 +69,22 @@ It needs macOS 14 or later. The Command Line Tools are enough; you don't need fu
 - Specs: HEX, RGB, CMYK, Pantone C and U, 50–900 tint ramps for UI, and accessible color pairings.
 - Export a one-page **brand sheet PDF**, design tokens, or swatches.
 
+**Fonts** (sidebar › Type)
+- 1,500+ free font families: Google Fonts, Fontshare and independent open-source fonts, plus everything installed on your Mac.
+- Collections: Designer Picks, Google Fonts, Fontshare, Open Source, On This Mac and Favorite Fonts. Filter by style (sans, serif, slab, display, script, mono), search by name or designer, sort by popularity, name or newest.
+- Type your own preview text and set the size. Click a font for every weight and italic, a size waterfall, the character set and its license.
+- A font file downloads the first time it's shown and is cached in `~/Library/Caches/Palette Pro/Fonts`, used only inside the app. **Settings › Fonts** shows the cache size and can clear it. **Get Font** opens the official page for the full family.
+
+**Pairing**
+- 12 heading and body pairings with a short reason for each: contrast (serif with sans), one family, statement headline with quiet text, and more.
+- Explore (every idea starts from a different headline font) or pick a heading font and get the best text faces for it. Choose a mood to steer the choice.
+- Double-click a pairing for a full page preview. **Copy CSS** gives the font stacks and embed links.
+
+**Type Scale**
+- Pick heading and body fonts (or use the selected pairing), a base size and a ratio from minor second to golden ratio.
+- Every step from Display to Caption with size, line height, letter spacing and weight, plus a sample page.
+- Export CSS variables, SCSS, a Tailwind config, a SwiftUI `Font` extension or design tokens (JSON).
+
 **Match**
 - Find the nearest Pantones to any color (CIEDE2000).
 - **Pick from Screen** samples any pixel on your display.
@@ -84,11 +100,12 @@ It needs macOS 14 or later. The Command Line Tools are enough; you don't need fu
 | Keys | Action |
 | --- | --- |
 | `⌘1`–`⌘5` | Library, Palette, Brand Studio, My Palettes, Match |
+| `⌘6`–`⌘8` | Fonts, Pairing, Type Scale |
 | `Space` / `⌘G` | Generate (Palette) |
 | `⌥⌘N` | Add a color |
 | `⌘S` / `⌘E` | Save / Export palette |
 | `⇧⌘I` | Import colors |
-| `⌘R` | New Brand Studio suggestions |
+| `⌘R` | New ideas in Brand Studio and Pairing |
 | `⌥⌘I` | Show or hide the inspector |
 
 ## Your data
@@ -109,6 +126,8 @@ Sources/PalettePro/
   Model/    color math, library data, palettes, exporters
   Views/    library, inspector, palette editor, My Palettes, Match, sheets
   Brand/    Brand Studio engine, mockups, brand sheet PDF
-scripts/    build-app.sh, make-dmg.sh, make-icon.swift (draws the icon at every size)
+  Type/     font catalogue and downloads, pairing engine, type scale, Fonts/Pairing/Type Scale views
+scripts/    build-app.sh, make-dmg.sh, make-icon.swift (draws the icon at every size),
+            update-fonts.py (refreshes the bundled font catalogue)
 Resources/  Info.plist, AppIcon.png (icon preview)
 ```

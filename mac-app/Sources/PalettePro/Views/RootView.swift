@@ -39,6 +39,7 @@ struct RootView: View {
         .onChange(of: model.settings) { model.scheduleSave() }
         .onChange(of: model.favorites) { model.scheduleSave() }
         .onChange(of: model.brand.settings) { model.scheduleSave() }
+        .onChange(of: model.typography.settings) { model.scheduleSave() }
     }
 
     @ViewBuilder private var detail: some View {
@@ -48,6 +49,9 @@ struct RootView: View {
         case .brand: BrandStudioView()
         case .saved: SavedView()
         case .match: MatchView()
+        case .fonts: FontLibraryView()
+        case .pairing: PairingView()
+        case .scale: TypeScaleView()
         }
     }
 }
@@ -96,6 +100,11 @@ struct Sidebar: View {
                 tool(.builder)
                 tool(.brand)
                 tool(.match)
+            }
+            Section("Type") {
+                tool(.fonts)
+                tool(.pairing)
+                tool(.scale)
             }
             Section("Collection") {
                 tool(.saved).badge(model.palettes.count)

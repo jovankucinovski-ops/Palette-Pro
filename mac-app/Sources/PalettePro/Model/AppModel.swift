@@ -53,6 +53,7 @@ final class AppModel {
     var toast: Toast?
 
     let brand = BrandModel()
+    let typography = TypeModel()
 
     @ObservationIgnored weak var undoManager: UndoManager?
     @ObservationIgnored var draggingColorID: UUID?
@@ -71,6 +72,7 @@ final class AppModel {
             current = state.current.colors.isEmpty ? fresh : state.current
             settings = state.settings
             if let b = state.brand { brand.restore(b) }
+            if let t = state.typography { typography.restore(t) }
         }
         brand.loadSavedLogo()
         NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { [weak self] _ in
@@ -115,7 +117,8 @@ final class AppModel {
     }
 
     func saveNow() {
-        let state = PersistedState(palettes: palettes, favorites: favorites.sorted(), current: current, settings: settings, brand: brand.settings)
+        let state = PersistedState(palettes: palettes, favorites: favorites.sorted(), current: current, settings: settings,
+                                   brand: brand.settings, typography: typography.settings)
         do {
             try FileManager.default.createDirectory(at: Self.dataDirectory, withIntermediateDirectories: true)
             try Self.encoder.encode(state).write(to: Self.stateURL, options: .atomic)

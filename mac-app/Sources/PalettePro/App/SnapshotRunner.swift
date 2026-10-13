@@ -96,7 +96,10 @@ enum SnapshotRunner {
             svgReport += "\nreloaded vector=\(reloaded.isVectorLogo) style=\(reloaded.logoStyle.rawValue)"
             try? svgReport.write(to: dir.appendingPathComponent("svg.txt"), atomically: true, encoding: .utf8)
 
+            await typePass(model, dir)
+
             NSApp.appearance = NSAppearance(named: .darkAqua)
+            model.destination = .brand
             model.brand.tab = .overview
             await shot("07-brand-dark", dir)
             model.destination = .library
@@ -165,8 +168,15 @@ enum SnapshotRunner {
         }
     }
 
-    private static func shot(_ name: String, _ dir: URL) async {
+    static func shot(_ name: String, _ dir: URL) async {
         try? await Task.sleep(for: .seconds(0.9))
+        // Another app (or another copy of Palette Pro) may have hidden this one meanwhile; bring it back.
+        if !NSApp.windows.contains(where: { $0.isVisible && $0.canBecomeMain }) {
+            NSApp.unhide(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            for w in NSApp.windows where w.canBecomeMain { w.orderFrontRegardless() }
+            try? await Task.sleep(for: .seconds(1))
+        }
         guard let window = NSApp.windows.first(where: { $0.isVisible && $0.canBecomeMain }) else {
             FileHandle.standardError.write(Data("snapshot \(name): no visible main window; windows=\(NSApp.windows.map { "\(type(of: $0)) visible=\($0.isVisible) main=\($0.canBecomeMain)" })\n".utf8))
             return
