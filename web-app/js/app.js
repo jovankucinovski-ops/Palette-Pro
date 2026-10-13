@@ -38,6 +38,11 @@
     sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
     moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
     monitor: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>',
+    type: '<path d="M4 7V5h16v2M9 19h6M12 5v14"/>',
+    pair: '<rect x="3" y="3" width="13" height="13" rx="2"/><path d="M8 21h11a2 2 0 0 0 2-2V8"/>',
+    scale: '<path d="M3 7V5h10v2M8 5v14M6 19h4M14 13v-1h7v1M17.5 12v7M16 19h3"/>',
+    external: '<path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+    code: '<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>',
   };
   const icon = (name, size = 18) =>
     `<svg class="i" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
@@ -225,7 +230,8 @@
 
   // ---------- Routing ----------
 
-  const VIEWS = ['library', 'builder', 'saved', 'match'];
+  const TYPE_VIEWS = ['fonts', 'pairing', 'scale'];
+  const VIEWS = ['library', 'builder', 'saved', 'match', ...TYPE_VIEWS];
   const scrollPos = {};
 
   function route() {
@@ -242,6 +248,7 @@
     if (v === 'builder') renderBuilder();
     if (v === 'saved') renderSaved();
     if (v === 'match') renderMatch();
+    if (TYPE_VIEWS.includes(v)) window.TypeStudio.show(v);
     renderTray();
     window.scrollTo(0, scrollPos[v] || 0);
   }
@@ -907,7 +914,7 @@
     });
     new IntersectionObserver(es => { if (es.some(x => x.isIntersecting)) fillLibrary(); }, { rootMargin: '1200px 0px' })
       .observe($('#libSentinel'));
-    window.addEventListener('scroll', () => $('.lib-controls').classList.toggle('stuck', window.scrollY > 4), { passive: true });
+    window.addEventListener('scroll', () => $$('.lib-controls').forEach(el => el.classList.toggle('stuck', window.scrollY > 4)), { passive: true });
 
     // Dialogs: close buttons and backdrop clicks
     $$('dialog').forEach(d => d.addEventListener('click', e => {
@@ -1244,6 +1251,7 @@
       const mod = e.metaKey || e.ctrlKey, k = e.key.toLowerCase();
       if (e.key === '/' && !typing && !mod) {
         e.preventDefault();
+        if (state.view === 'fonts') { $('#fontSearch').focus(); return; }
         go('library');
         $('#libSearch').focus();
         return;
@@ -1268,6 +1276,9 @@
   }
 
   // ---------- Init ----------
+
+  // Shared with the Fonts, Pairing and Type Scale sections (js/type.js).
+  window.PP = { toast, copyText, downloadBlob, icon, esc, uid, go, store, host };
 
   function init() {
     $$('[data-icon]').forEach(el => { el.innerHTML = icon(el.dataset.icon); });
