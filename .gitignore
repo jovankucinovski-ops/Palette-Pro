@@ -1,0 +1,12 @@
+# Build output (the scripts build into ~/Library/Caches/PalettePro-build, these cover manual builds)
+.build/
+build/
+.swiftpm/
+DerivedData/
+*.xcodeproj/xcuserdata/
+dist/
+*.dmg
+
+# macOS
+.DS_Store
+._*

@@ -1,0 +1,52 @@
+# Builds Palette Pro and publishes a GitHub Release when a version tag (v1.0, v1.1, …) is pushed.
+# Run it by hand from the Actions tab to get the same files as a downloadable build artifact.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Build the app and disk image
+        run: mac-app/scripts/make-dmg.sh --no-reveal
+
+      - name: Collect downloads
+        run: |
+          VERSION="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' mac-app/Resources/Info.plist)"
+          OUT="$HOME/Library/Caches/PalettePro-build"
+          mkdir -p dist
+          cp "$OUT/Palette Pro $VERSION.dmg" "dist/Palette-Pro-$VERSION.dmg"
+          ditto -c -k --keepParent "$OUT/Palette Pro.app" "dist/Palette-Pro-$VERSION-mac.zip"
+          ditto -c -k --norsrc --noextattr --keepParent web-app "dist/Palette-Pro-$VERSION-web.zip"
+          (cd dist && shasum -a 256 * > SHA256SUMS.txt)
+          ls -la dist
+
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --title "Palette Pro ${GITHUB_REF_NAME#v}" \
+            --notes-file .github/release-notes.md
+
+      - name: Keep the files (manual runs)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: palette-pro
+          path: dist

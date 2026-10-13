@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Palette Pro</title>
+  <meta name="description" content="A personal color library: browse Pantone-style swatches, build and save palettes, and match any color to its nearest Pantone.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='9' width='12' height='20' rx='2' fill='%23F2C531' transform='rotate(-14 9 19)'/%3E%3Crect x='10' y='6' width='12' height='20' rx='2' fill='%23E4583E'/%3E%3Crect x='17' y='9' width='12' height='20' rx='2' fill='%230F4C81' transform='rotate(14 23 19)'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/styles.css">
+  <script>
+    try {
+      // Storage keys keep the app's original name so saved data stays where it is.
+      var t = JSON.parse(localStorage.getItem('swatchbook.settings') || '{}').theme;
+      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <a class="brand" href="#library" aria-label="Palette Pro home">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span>Palette Pro</span>
+    </a>
+    <nav class="tabs" aria-label="Sections">
+      <a href="#library" data-view="library">Library</a>
+      <a href="#builder" data-view="builder">Palette</a>
+      <a href="#saved" data-view="saved">My palettes <span class="count" id="savedCount"></span></a>
+      <a href="#match" data-view="match">Match</a>
+    </nav>
+    <button class="icon-btn" id="themeBtn" type="button"></button>
+  </header>
+
+  <main id="main">
+    <!-- Library -->
+    <section class="view" id="view-library" hidden>
+      <div class="lib-controls">
+        <div class="lib-row">
+          <label class="search">
+            <span class="sr">Search colors</span>
+            <span class="search-icon" data-icon="search"></span>
+            <input id="libSearch" type="search" placeholder="Search “coral”, “185 C” or “#0F4C81”" autocomplete="off" spellcheck="false">
+            <kbd class="hide-sm">/</kbd>
+          </label>
+          <label class="select">
+            <span class="sr">Sort</span>
+            <select id="libSort">
+              <option value="book">Book order</option>
+              <option value="hue">By hue</option>
+              <option value="light">Light to dark</option>
+              <option value="name">Name</option>
+            </select>
+          </label>
+        </div>
+        <div class="filter-row" id="collChips" role="group" aria-label="Collection"></div>
+        <div class="filter-row" id="familyChips" role="group" aria-label="Color family"></div>
+      </div>
+      <p class="result-count" id="libCount" aria-live="polite"></p>
+      <div class="chip-grid" id="libGrid"></div>
+      <div class="sentinel" id="libSentinel"></div>
+      <div class="empty" id="libEmpty" hidden>
+        <p class="empty-title">No colors match</p>
+        <p>Try a different search, or clear the filters.</p>
+        <button class="btn" type="button" id="libClear">Clear filters</button>
+      </div>
+    </section>
+
+    <!-- Palette builder -->
+    <section class="view" id="view-builder" hidden>
+      <div class="builder-head">
+        <div class="name-wrap">
+          <input id="palName" class="pal-name" aria-label="Palette name" maxlength="60" spellcheck="false">
+          <span class="save-state" id="saveState"></span>
+        </div>
+        <div class="head-actions">
+          <button class="icon-btn" type="button" id="undoBtn" title="Undo (⌘Z)" aria-label="Undo"></button>
+          <button class="icon-btn" type="button" id="redoBtn" title="Redo (⇧⌘Z)" aria-label="Redo"></button>
+          <button class="btn" type="button" id="newBtn" title="New palette" aria-label="New palette"></button>
+          <button class="btn" type="button" id="exportBtn" title="Export" aria-label="Export"></button>
+          <button class="btn primary" type="button" id="saveBtn"></button>
+        </div>
+      </div>
+
+      <div class="gen-bar">
+        <button class="btn accent" type="button" id="genBtn"></button>
+        <label class="field"><span>Harmony</span>
+          <select id="harmony">
+            <option value="auto">Surprise me</option>
+            <option value="analogous">Analogous</option>
+            <option value="monochromatic">Monochromatic</option>
+            <option value="complementary">Complementary</option>
+            <option value="split">Split complementary</option>
+            <option value="triadic">Triadic</option>
+            <option value="tetradic">Tetradic</option>
+          </select>
+        </label>
+        <label class="field"><span>Mood</span>
+          <select id="mood">
+            <option value="any">Balanced</option>
+            <option value="pastel">Pastel</option>
+            <option value="vibrant">Vibrant</option>
+            <option value="muted">Muted</option>
+            <option value="earthy">Earthy</option>
+            <option value="dark">Dark</option>
+          </select>
+        </label>
+        <label class="switch" title="Replace generated colors with their nearest Pantone">
+          <input type="checkbox" id="snap">
+          <span class="switch-track" aria-hidden="true"></span>
+          <span>Snap to Pantone</span>
+        </label>
+        <label class="field"><span>Match against</span>
+          <select id="matchLib" data-match-lib></select>
+        </label>
+        <button class="btn" type="button" id="addColorBtn"></button>
+      </div>
+
+      <div class="columns" id="columns" aria-label="Palette colors"></div>
+      <p class="hint builder-hint">Press <kbd>Space</kbd> to generate. Lock the colors you like and they stay put. Drag the <span data-icon="grip"></span> handle (or use arrow keys on it) to reorder.</p>
+
+      <section class="panel" aria-labelledby="contrastTitle">
+        <div class="panel-head">
+          <h2 id="contrastTitle">Contrast check</h2>
+          <p class="hint">Text color (columns) on background (rows). <b>AA</b> needs 4.5:1 for body text, <b>AA Large</b> 3:1 for headings.</p>
+        </div>
+        <div class="table-scroll" id="contrastGrid"></div>
+      </section>
+    </section>
+
+    <!-- Saved palettes -->
+    <section class="view" id="view-saved" hidden>
+      <div class="section-head">
+        <h1>My palettes</h1>
+        <div class="head-actions">
+          <button class="btn" type="button" id="importBtn"></button>
+          <button class="btn" type="button" id="backupBtn"></button>
+          <button class="btn primary" type="button" id="newPalBtn"></button>
+        </div>
+      </div>
+      <div class="pal-grid" id="palGrid"></div>
+      <div class="empty" id="savedEmpty" hidden>
+        <p class="empty-title">No saved palettes yet</p>
+        <p>Build one in the Palette tab and press Save. Or import a list of hex codes or Pantone numbers.</p>
+        <a class="btn primary" href="#builder">Start a palette</a>
+      </div>
+    </section>
+
+    <!-- Match -->
+    <section class="view" id="view-match" hidden>
+      <div class="match-layout">
+        <section class="panel" aria-labelledby="matchTitle">
+          <h2 id="matchTitle">Match a color</h2>
+          <p class="hint">Find the closest Pantone colors to any color, ranked by CIEDE2000 ΔE. Under 1 looks identical; under 2.5 is very close.</p>
+          <div class="match-top">
+            <div class="match-swatch" id="matchSwatch"></div>
+            <div class="match-inputs">
+              <label class="field"><span>Hex</span>
+                <input id="matchHex" class="mono" maxlength="7" spellcheck="false" autocomplete="off">
+              </label>
+              <div class="row">
+                <label class="btn color-btn" title="Pick a color">
+                  <span data-icon="droplet"></span> Picker
+                  <input type="color" id="matchPicker">
+                </label>
+                <button class="btn" type="button" id="eyeBtn" hidden></button>
+              </div>
+              <label class="field"><span>Match against</span>
+                <select id="matchLib2" data-match-lib></select>
+              </label>
+            </div>
+          </div>
+          <ol class="match-list" id="matchList"></ol>
+        </section>
+
+        <section class="panel" aria-labelledby="imgTitle">
+          <h2 id="imgTitle">Palette from an image</h2>
+          <p class="hint">Pull the main colors out of a photo, logo or moodboard. Click the image to match a single pixel. You can also paste an image with <kbd>⌘V</kbd>.</p>
+          <label class="dropzone" id="dropzone">
+            <input type="file" accept="image/*" id="imgInput" class="sr">
+            <span data-icon="image"></span>
+            <span><b>Drop an image</b> or click to choose</span>
+          </label>
+          <div class="img-wrap" id="imgWrap" hidden>
+            <canvas id="imgCanvas" aria-label="Uploaded image. Click to sample a color."></canvas>
+          </div>
+          <div class="extract-bar" id="extractBar" hidden>
+            <label class="field inline"><span>Colors</span>
+              <select id="kSelect">
+                <option>3</option><option>4</option><option selected>5</option><option>6</option><option>8</option><option>10</option>
+              </select>
+            </label>
+            <button class="btn" type="button" id="reextractBtn"></button>
+            <div class="spacer"></div>
+            <button class="btn" type="button" id="useRawBtn">Use colors</button>
+            <button class="btn primary" type="button" id="usePantoneBtn">Use Pantone matches</button>
+          </div>
+          <div class="extract" id="extract"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <aside class="tray" id="tray" aria-label="Current palette">
+    <div class="tray-swatches" id="traySwatches"></div>
+    <div class="tray-meta">
+      <strong id="trayName"></strong>
+      <span id="trayCount"></span>
+    </div>
+    <a class="btn small" href="#builder">Open palette</a>
+  </aside>
+
+  <dialog id="detailDlg" class="sheet" aria-label="Color details">
+    <button class="icon-btn dlg-close" type="button" data-close aria-label="Close"></button>
+    <div id="detailBody"></div>
+  </dialog>
+
+  <dialog id="exportDlg" class="modal" aria-labelledby="exportTitle">
+    <div class="modal-head">
+      <h2 id="exportTitle">Export</h2>
+      <button class="icon-btn" type="button" data-close aria-label="Close"></button>
+    </div>
+    <div class="fmt-tabs" id="fmtTabs" role="tablist" aria-label="Format"></div>
+    <div class="export-body" id="exportBody"></div>
+    <div class="modal-foot">
+      <button class="btn" type="button" id="exportCopy">Copy</button>
+      <button class="btn primary" type="button" id="exportDownload">Download</button>
+    </div>
+  </dialog>
+
+  <dialog id="importDlg" class="modal" aria-labelledby="importTitle">
+    <div class="modal-head">
+      <h2 id="importTitle">Import</h2>
+      <button class="icon-btn" type="button" data-close aria-label="Close"></button>
+    </div>
+    <div class="import-body">
+      <section>
+        <h3>Paste colors</h3>
+        <p class="hint">Hex codes or Pantone numbers, in any format: <code>#F6EB61, 0F4C81</code>, <code>185 C</code>, <code>19-4052 TCX</code>. Up to 12 colors.</p>
+        <textarea id="pasteText" rows="5" autofocus spellcheck="false" placeholder="#F6EB61&#10;PANTONE 185 C&#10;19-4052 TCX"></textarea>
+        <div class="row">
+          <input id="pasteName" class="input" placeholder="Palette name" maxlength="60">
+          <button class="btn primary" type="button" id="pasteCreate">Create palette</button>
+        </div>
+        <p class="hint" id="pasteInfo" aria-live="polite"></p>
+      </section>
+      <section>
+        <h3>Restore a backup</h3>
+        <p class="hint">Choose a file made with “Back up all”, or a palette exported as JSON. Palettes you already have are kept.</p>
+        <label class="btn file-btn"><span data-icon="upload"></span> Choose file…
+          <input type="file" id="backupFile" accept=".json,application/json" class="sr">
+        </label>
+      </section>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/color.js"></script>
+  <script src="js/exporters.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
