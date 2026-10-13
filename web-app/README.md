@@ -51,6 +51,7 @@ Your palettes and favorites are saved in the browser you open it with. Use **My 
 
 ```
 index.html        the app
+icon.svg          app icon (also icon-32.png and apple-touch-icon.png)
 css/styles.css    styling (light + dark)
 js/data.js        color library
 js/color.js       color math: conversions, ΔE 2000, generation, image extraction
