@@ -32,6 +32,16 @@ struct HelpPage: View {
             "Click an idea to use it everywhere: logo versions, mockups, specs and the brand sheet.",
             "Export a **brand sheet PDF**, design tokens, or a **logo package** with color, dark and white versions.",
         ]),
+        Topic(title: "Fonts", symbol: "textformat", points: [
+            "Browse 1,500+ free fonts from Google Fonts, Fontshare and open-source foundries, plus the fonts on your Mac.",
+            "**Designer Picks** collects the fonts designers use most. Filter by style, search by name or designer, and type your own preview text.",
+            "Fonts download the first time you see them and stay inside Palette Pro. Click a font for every weight, its characters and license, or **Get Font** for the full family.",
+        ]),
+        Topic(title: "Pairing & Type Scale", symbol: "textformat.size", points: [
+            "**Pairing** suggests 12 heading and body combinations with a reason for each. Explore, or start from a font you like, and pick a mood.",
+            "Double-click a pairing for a full page preview, then **Use in Type Scale**.",
+            "**Type Scale** builds every text size from one base size and ratio, with line heights, and exports CSS, SCSS, Tailwind, SwiftUI or design tokens.",
+        ]),
         Topic(title: "Match", symbol: "eyedropper", points: [
             "Find the nearest Pantones to any color, ranked by ΔE (under 1 looks identical).",
             "Use **Pick from Screen** to sample anything on your display, or drop in a photo to extract its palette.",
@@ -45,12 +55,13 @@ struct HelpPage: View {
 
     private let shortcuts: [(String, String)] = [
         ("⌘1 – ⌘5", "Library, Palette, Brand Studio, My Palettes, Match"),
+        ("⌘6 – ⌘8", "Fonts, Pairing, Type Scale"),
         ("Space  /  ⌘G", "Generate a palette"),
         ("⌥⌘N", "Add a color"),
         ("⌘S", "Save palette"),
         ("⌘E", "Export palette"),
         ("⇧⌘I", "Import colors"),
-        ("⌘R", "More ideas in Brand Studio"),
+        ("⌘R", "More ideas in Brand Studio and Pairing"),
         ("⌥⌘I", "Show or hide the inspector"),
         ("⌘Z  /  ⇧⌘Z", "Undo / Redo"),
     ]
@@ -63,7 +74,7 @@ struct HelpPage: View {
                         .frame(width: 72, height: 72)
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Palette Pro Help").font(.largeTitle.weight(.bold))
-                        Text("Colors, palettes and brand ideas, with Pantone references.")
+                        Text("Colors, fonts, palettes and brand ideas, with Pantone references.")
                             .foregroundStyle(.secondary)
                     }
                 }

@@ -64,9 +64,11 @@ struct PersistedState: Codable {
     var current: WorkingPalette
     var settings: AppSettings
     var brand: BrandSettings?
+    var typography: TypeSettings?
 
-    init(palettes: [Palette], favorites: [String], current: WorkingPalette, settings: AppSettings, brand: BrandSettings?) {
-        self.palettes = palettes; self.favorites = favorites; self.current = current; self.settings = settings; self.brand = brand
+    init(palettes: [Palette], favorites: [String], current: WorkingPalette, settings: AppSettings, brand: BrandSettings?, typography: TypeSettings?) {
+        self.palettes = palettes; self.favorites = favorites; self.current = current; self.settings = settings
+        self.brand = brand; self.typography = typography
     }
 
     init(from decoder: Decoder) throws {
@@ -77,11 +79,13 @@ struct PersistedState: Codable {
         current = try c.decode(WorkingPalette.self, forKey: .current)
         settings = (try? c.decode(AppSettings.self, forKey: .settings)) ?? AppSettings()
         brand = try? c.decode(BrandSettings.self, forKey: .brand)
+        typography = try? c.decode(TypeSettings.self, forKey: .typography)
     }
 }
 
 enum Destination: String, CaseIterable, Identifiable, Hashable {
-    case library, builder, brand, saved, match
+    // Order sets the ⌘1… shortcuts; new sections go at the end so existing shortcuts stay the same.
+    case library, builder, brand, saved, match, fonts, pairing, scale
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -90,6 +94,9 @@ enum Destination: String, CaseIterable, Identifiable, Hashable {
         case .brand: "Brand Studio"
         case .saved: "My Palettes"
         case .match: "Match"
+        case .fonts: "Fonts"
+        case .pairing: "Pairing"
+        case .scale: "Type Scale"
         }
     }
     var symbol: String {
@@ -99,6 +106,9 @@ enum Destination: String, CaseIterable, Identifiable, Hashable {
         case .brand: "sparkles.rectangle.stack"
         case .saved: "rectangle.stack"
         case .match: "eyedropper"
+        case .fonts: "textformat"
+        case .pairing: "rectangle.on.rectangle"
+        case .scale: "textformat.size"
         }
     }
 }

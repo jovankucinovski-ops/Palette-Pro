@@ -259,6 +259,18 @@ struct SettingsView: View {
                     ForEach(Mood.allCases) { Text($0.title).tag($0) }
                 }
             }
+            Section {
+                LabeledContent("Font previews", value: ByteCountFormatter.string(fromByteCount: Int64(FontStore.cacheSize()), countStyle: .file))
+                Button("Clear Downloaded Previews") {
+                    try? FileManager.default.removeItem(at: FontStore.cacheDirectory)
+                    model.showToast("Font previews cleared. They download again when you need them.")
+                }
+            } header: {
+                Text("Fonts")
+            } footer: {
+                Text("Fonts download the first time you preview them and are only available inside Palette Pro. Nothing is installed on your Mac.")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
             Section("Your library") {
                 LabeledContent("Saved palettes", value: "\(model.palettes.count)")
                 LabeledContent("Favorites", value: "\(model.favorites.count)")
