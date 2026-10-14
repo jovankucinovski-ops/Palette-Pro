@@ -9,7 +9,7 @@
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="icon" href="icon-32.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="css/styles.css?v=1.2">
+  <link rel="stylesheet" href="css/styles.css?v=1.3">
   <script>
     try {
       // Storage keys keep the app's original name so saved data stays where it is.
@@ -29,6 +29,7 @@
     <nav class="tabs" aria-label="Sections">
       <a href="#library" data-view="library">Library</a>
       <a href="#builder" data-view="builder">Palette</a>
+      <a href="#fusion" data-view="fusion">Fusion</a>
       <a href="#saved" data-view="saved">My palettes <span class="count" id="savedCount"></span></a>
       <a href="#match" data-view="match">Match</a>
       <a href="#fonts" data-view="fonts">Fonts</a>
@@ -204,6 +205,46 @@
           <div class="extract" id="extract"></div>
         </section>
       </div>
+    </section>
+
+    <!-- Fusion -->
+    <section class="view" id="view-fusion" hidden>
+      <div class="fx-bar">
+        <button class="btn accent" type="button" id="fxGenerate"></button>
+        <label class="field inline"><span>Mood</span><select id="fxMood"></select></label>
+        <div class="filter-row" id="fxTones" role="group" aria-label="Page"></div>
+        <label class="switch" title="Snap the accent to the nearest Pantone Coated color">
+          <input type="checkbox" id="fxSnap">
+          <span class="switch-track" aria-hidden="true"></span>
+          <span>Pantone accent</span>
+        </label>
+        <div class="spacer"></div>
+        <button class="icon-btn" type="button" id="fxUndo" title="Previous style (⌘Z)" aria-label="Previous style"></button>
+        <button class="icon-btn" type="button" id="fxRedo" title="Next style (⇧⌘Z)" aria-label="Next style"></button>
+        <div class="filter-row" id="fxLayouts" role="group" aria-label="Example"></div>
+      </div>
+      <p class="type-status hint" hidden></p>
+      <div class="fx-stage" id="fxStage" aria-label="Example design using this style"></div>
+      <div class="fx-title">
+        <div>
+          <h2 id="fxName"></h2>
+          <p class="hint" id="fxFonts"></p>
+        </div>
+        <div class="head-actions">
+          <button class="btn" type="button" id="fxSave"></button>
+          <button class="btn" type="button" id="fxCss"></button>
+          <button class="btn" type="button" id="fxPalette"></button>
+          <button class="btn" type="button" id="fxScale"></button>
+        </div>
+      </div>
+      <div class="fx-head"><h3>Colors and fonts</h3><p class="hint">Lock what you like; Generate (<kbd>Space</kbd>) changes the rest. Click a color or type a hex to change it.</p></div>
+      <div class="fx-slots" id="fxSlots"></div>
+      <div class="fx-fonts" id="fxFontSlots"></div>
+      <div class="fx-checks" id="fxChecks"></div>
+      <section class="fx-saved-wrap" id="fxSavedWrap" hidden>
+        <h3>Saved styles</h3>
+        <div class="fx-saved" id="fxSaved"></div>
+      </section>
     </section>
 
     <!-- Fonts -->
@@ -394,10 +435,10 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="js/data.js?v=1.2"></script>
-  <script src="js/color.js?v=1.2"></script>
-  <script src="js/exporters.js?v=1.2"></script>
-  <script src="js/type.js?v=1.2"></script>
-  <script src="js/app.js?v=1.2"></script>
+  <script src="js/data.js?v=1.3"></script>
+  <script src="js/color.js?v=1.3"></script>
+  <script src="js/exporters.js?v=1.3"></script>
+  <script src="js/type.js?v=1.3"></script>
+  <script src="js/app.js?v=1.3"></script>
 </body>
 </html>

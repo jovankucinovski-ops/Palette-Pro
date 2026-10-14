@@ -57,7 +57,7 @@ The release also has a `.zip` of the app if you'd rather not use the disk image.
 
 ## Web app
 
-- **Online:** [jovankucinovski-ops.github.io/Palette-Pro](https://jovankucinovski-ops.github.io/Palette-Pro/). Nothing to install, and palettes are saved in your browser. It has the Library, Palette, Match, Fonts, Pairing and Type scale sections (Brand Studio is Mac only).
+- **Online:** [jovankucinovski-ops.github.io/Palette-Pro](https://jovankucinovski-ops.github.io/Palette-Pro/). Nothing to install, and palettes are saved in your browser. It has the Library, Palette, Fusion, Match, Fonts, Pairing and Type scale sections (Brand Studio is Mac only).
 - **Offline:** download **Palette-Pro-x.y-web.zip** from the [latest release](../../releases/latest), unzip it and double-click `index.html`.
 
 It works in Chrome, Edge, Safari and Firefox. Backups move freely between the web and Mac versions. See [web-app/README.md](web-app/README.md).

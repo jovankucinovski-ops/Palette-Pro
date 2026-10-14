@@ -1,4 +1,4 @@
-/* Palette Pro: Fonts, Pairing and Type Scale. Same catalogue and rules as the Mac app.
+/* Palette Pro: Fonts, Pairing, Type Scale and Fusion. Same catalogue and rules as the Mac app.
    The font list (js/fonts-data.js) loads the first time one of these sections opens, and each font
    loads from its official CDN (Fontsource on jsDelivr, or Fontshare) when it scrolls into view. */
 (() => {
@@ -29,7 +29,7 @@
     if (catalog) return catalog;
     catalog = new Promise((resolve, reject) => {
       if (window.FONT_DATA) return resolve();
-      const s = Object.assign(document.createElement('script'), { src: 'js/fonts-data.js?v=1.2', async: true });
+      const s = Object.assign(document.createElement('script'), { src: 'js/fonts-data.js?v=1.3', async: true });
       s.onload = resolve;
       s.onerror = () => { catalog = null; reject(new Error('Couldn’t load the font list.')); };
       document.head.append(s);
@@ -142,6 +142,7 @@
   const persist = () => pp().store.set('type', {
     filter: st.filter, cat: st.cat, sort: st.sort, sample: st.sample, size: st.size, favs: [...st.favs],
     headingId: st.headingId, mood: st.mood, headline: st.headline, pairings: st.pairings, scale: st.scale,
+    fusion: { style: fx.style, locks: fx.locks, mood: fx.mood, tone: fx.tone, layout: fx.layout, snap: fx.snap, saved: fx.saved },
   });
   const sample = () => st.sample.trim() || DEFAULT_SAMPLE;
 
@@ -572,6 +573,418 @@
     hydrate($('#view-scale'));
   }
 
+  // ---------- Fusion: colors and fonts together (same rules as the Mac app) ----------
+
+  const Col = window.Color;
+  const ok = hex => Col.rgbToOklch(Col.hexToRgb(hex));
+  const okHex = (L, Cc, H) => Col.oklchToHex(L, Math.max(0, Cc), ((H % 360) + 360) % 360);
+  const ratio = (a, b) => Col.contrast(Col.hexToRgb(a), Col.hexToRgb(b));
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const pick = list => list[Math.floor(Math.random() * list.length)];
+  const ROLES = [['background', 'Background', 'Page background'], ['text', 'Text', 'Headlines and body text'],
+    ['accent', 'Accent', 'Buttons, links and highlights'], ['surface', 'Surface', 'Cards, panels and fields'],
+    ['muted', 'Secondary text', 'Captions, metadata and hints'], ['onAccent', 'On accent', 'Text on accent buttons']];
+  const LOCKABLE = ['background', 'text', 'accent'];
+  const TONES = [['any', 'Any'], ['light', 'Light'], ['dark', 'Dark'], ['color', 'Colored']];
+  const LAYOUTS = [['website', 'Website'], ['poster', 'Poster'], ['app', 'App']];
+  const DESIGN = { website: [1000, 600], poster: [600, 800], app: [1000, 600] };
+  const ACCENT = {
+    editorial: [[0.45, 0.60], [0.08, 0.14]], modern: [[0.55, 0.68], [0.12, 0.20]], elegant: [[0.40, 0.62], [0.04, 0.10]],
+    friendly: [[0.62, 0.75], [0.12, 0.18]], corporate: [[0.40, 0.55], [0.08, 0.15]], bold: [[0.55, 0.70], [0.16, 0.24]],
+    any: [[0.45, 0.70], [0.08, 0.20]],
+  };
+
+  const fx = Object.assign({ style: null, locks: [], mood: 'any', tone: 'any', layout: 'website', snap: false, saved: [] }, saved.fusion || {});
+  const fxHistory = { past: [], future: [] };
+  const fxValid = s => !!(s && s.colors && byId(s.headingId) && byId(s.bodyId));
+
+  /** Moves `hex` away from `bg` in lightness until it reaches the WCAG contrast ratio. */
+  function pushFrom(hex, bg, target) {
+    let [L, Cc, H] = ok(hex);
+    const darker = ok(bg)[0] >= 0.55;
+    let out = hex;
+    for (let i = 0; i < 40 && ratio(out, bg) < target; i++) {
+      L = Math.min(0.99, Math.max(0.02, L + (darker ? -0.02 : 0.02)));
+      out = okHex(L, Cc, H);
+      if (L <= 0.02 || L >= 0.99) break;
+    }
+    return out;
+  }
+  const surfaceFor = bg => { const [L, Cc, H] = ok(bg); return okHex(L + (L < 0.55 ? 0.05 : L > 0.975 ? -0.03 : 0.02), Cc, H); };
+  const mutedFor = (text, bg) => { const t = ok(text), b = ok(bg); return pushFrom(okHex(t[0] + (b[0] - t[0]) * 0.38, t[1], t[2]), bg, 4.5); };
+  const onAccentFor = accent => {
+    const h = ok(accent)[2];
+    return ratio('#FFFFFF', accent) >= ratio('#151517', accent) ? okHex(0.985, 0.008, h) : okHex(0.18, 0.02, h);
+  };
+
+  /** A new style; locked slots come from `cur`, everything else is generated around them. */
+  function fxGenerate(cur, locks, mood, tone, snap) {
+    const locked = s => !!cur && locks.includes(s);
+    let accent;
+    if (locked('accent')) accent = cur.colors.accent;
+    else {
+      const [Lr, Cr] = ACCENT[mood] || ACCENT.any;
+      let hue = rnd(0, 360);
+      if (mood === 'corporate' && Math.random() < 0.5) hue = rnd(225, 265);
+      accent = okHex(rnd(...Lr), rnd(...Cr), hue);
+    }
+    const aHue = ok(accent)[2];
+
+    let kind = tone;
+    if (locked('background')) {
+      const b = ok(cur.colors.background);
+      kind = b[0] < 0.55 ? (b[1] > 0.05 ? 'color' : 'dark') : 'light';
+    } else if (kind === 'any') {
+      const colored = ['bold', 'friendly', 'modern', 'any'].includes(mood) ? 0.18 : 0.06;
+      const r = Math.random();
+      kind = r < colored ? 'color' : r < colored + 0.32 ? 'dark' : 'light';
+      // A locked accent has to stay visible: bright accents need a dark page, deep ones a light page.
+      if (locked('accent')) {
+        const L = ok(accent)[0];
+        if (L > 0.72 && kind === 'light') kind = Math.random() < 0.5 ? 'dark' : 'color';
+        if (L < 0.42 && kind !== 'light') kind = 'light';
+      }
+    }
+
+    let background;
+    if (locked('background')) background = cur.colors.background;
+    else if (kind === 'dark') background = okHex(rnd(0.14, 0.22), rnd(0.008, 0.03), aHue + rnd(-30, 30));
+    else if (kind === 'color') background = okHex(rnd(0.24, 0.38), rnd(0.06, 0.12), aHue + (Math.random() < 0.5 ? 0 : rnd(150, 210)));
+    else background = okHex(rnd(0.955, 0.99), rnd(0.004, 0.02), Math.random() < 0.4 ? 85 : aHue + rnd(-40, 40));
+    const bg = ok(background), darkPage = bg[0] < 0.55;
+
+    const text = locked('text') ? cur.colors.text
+      : pushFrom(darkPage ? okHex(rnd(0.93, 0.97), rnd(0.005, 0.02), bg[2]) : okHex(rnd(0.16, 0.24), rnd(0.01, 0.03), bg[2]), background, 7);
+
+    if (!locked('accent')) {
+      if (kind === 'color') accent = okHex(rnd(0.78, 0.88), Math.max(0.10, ok(accent)[1]), aHue);
+      accent = pushFrom(accent, background, 3);
+      // Buttons need readable labels: white on a deeper accent for light pages, dark on a brighter one otherwise.
+      accent = pushFrom(accent, darkPage ? okHex(0.18, 0.02, aHue) : okHex(0.985, 0.008, aHue), 4.6);
+      if (snap) {
+        const m = pp().nearest(accent, 1, 'coated')[0];
+        if (m && ratio(m.s.hex, background) >= 3 && Math.max(ratio(m.s.hex, '#FFFFFF'), ratio(m.s.hex, '#151517')) >= 4.5) accent = m.s.hex;
+      }
+    }
+
+    let h = locked('heading') ? byId(cur.headingId) : null, b = locked('body') ? byId(cur.bodyId) : null;
+    let hw = cur ? cur.headingWeight : 700, bw = cur ? cur.bodyWeight : 400;
+    if (!h && !b) {
+      const p = pick(suggest(null, mood));
+      if (p) { h = byId(p.headingId); hw = p.headingWeight; b = byId(p.bodyId); bw = p.bodyWeight; }
+    } else if (h && !b) {
+      const p = pick(suggest(h, mood).slice(0, 6));
+      if (p) { b = byId(p.bodyId); bw = p.bodyWeight; }
+    } else if (!h && b) {
+      const pool = HEADLINES.filter(x => mood === 'any' || x.moods.includes(mood)).map(x => named(x.family)).filter(f => f && f.id !== b.id);
+      h = pick(pool) || named('Inter');
+      hw = hWeight(h, mood);
+    }
+    h = h || named('Inter');
+    b = b || named('Inter');
+    return {
+      id: pp().uid(),
+      colors: { background, surface: surfaceFor(background), text, muted: mutedFor(text, background), accent, onAccent: onAccentFor(accent) },
+      headingId: h.id, headingWeight: nearest(h, hw), bodyId: b.id, bodyWeight: nearest(b, bw),
+    };
+  }
+
+  /** Recomputes the colors that follow the others after a manual edit. */
+  function fxDerive(s) {
+    const c = { ...s.colors };
+    c.surface = surfaceFor(c.background);
+    c.muted = mutedFor(c.text, c.background);
+    c.onAccent = onAccentFor(c.accent);
+    return { ...s, colors: c };
+  }
+
+  const fxChecks = s => [
+    ['Text on background', ratio(s.colors.text, s.colors.background), 4.5],
+    ['Secondary text on background', ratio(s.colors.muted, s.colors.background), 4.5],
+    ['Accent on background', ratio(s.colors.accent, s.colors.background), 3],
+    ['Button text on accent', ratio(s.colors.onAccent, s.colors.accent), 4.5],
+  ];
+  const gradeOf = r => (r >= 7 ? 'AAA' : r >= 4.5 ? 'AA' : r >= 3 ? 'AA Large' : 'Fail');
+  function fxName(s) {
+    const m = pp().nearest(s.colors.accent, 1, 'tcx')[0], h = byId(s.headingId);
+    return [m && m.s.name, h && h.family].filter(Boolean).join(' · ');
+  }
+  const fxFontsLabel = s => [...new Set([byId(s.headingId), byId(s.bodyId)].filter(Boolean).map(f => f.family))].join(' + ');
+  const sameStyle = (a, b) => JSON.stringify(a.colors) === JSON.stringify(b.colors) && a.headingId === b.headingId && a.bodyId === b.bodyId;
+
+  function fxCSS(s) {
+    const h = byId(s.headingId), b = byId(s.bodyId);
+    const lines = [`/* ${fxName(s)}, made with Palette Pro */`,
+      ...[embed(h, [s.headingWeight]), h === b ? null : embed(b, [s.bodyWeight, nearest(b, 700)])].filter(Boolean).map(x => `/* ${x} */`), ':root {'];
+    ROLES.forEach(([k, title]) => lines.push(`  --color-${title.toLowerCase().replace(/\s+/g, '-')}: ${s.colors[k]};`));
+    lines.push(`  --font-heading: ${stack(h)};`, `  --font-body: ${stack(b)};`, '}',
+      `body { background: var(--color-background); color: var(--color-text); font-family: var(--font-body); font-weight: ${s.bodyWeight}; }`,
+      `h1, h2, h3 { font-family: var(--font-heading); font-weight: ${s.headingWeight}; }`,
+      '.button { background: var(--color-accent); color: var(--color-on-accent); }');
+    return lines.join('\n') + '\n';
+  }
+
+  // State changes
+
+  function fxSet(next, record = true) {
+    if (record && fx.style) {
+      fxHistory.past.push(fx.style);
+      if (fxHistory.past.length > 100) fxHistory.past.shift();
+      fxHistory.future = [];
+    }
+    fx.style = next;
+    persist();
+    renderFusion();
+  }
+  const fxNew = () => fxSet(fxGenerate(fx.style, fx.locks, fx.mood, fx.tone, fx.snap));
+  function fxStep(back) {
+    const from = back ? fxHistory.past : fxHistory.future, to = back ? fxHistory.future : fxHistory.past;
+    if (!from.length) return;
+    to.push(fx.style);
+    fx.style = from.pop();
+    persist();
+    renderFusion();
+  }
+  function fxToggleLock(slot) {
+    fx.locks = fx.locks.includes(slot) ? fx.locks.filter(x => x !== slot) : [...fx.locks, slot];
+    persist();
+    renderFusionSlots();
+  }
+  function fxSetColor(role, hex) {
+    if (!fx.locks.includes(role)) fx.locks = [...fx.locks, role];
+    fxSet(fxDerive({ ...fx.style, colors: { ...fx.style.colors, [role]: hex } }));
+  }
+  function fxSetFont(heading, f) {
+    const s = { ...fx.style };
+    if (heading) { s.headingId = f.id; s.headingWeight = hWeight(f, fx.mood); } else { s.bodyId = f.id; s.bodyWeight = regular(f); }
+    const slot = heading ? 'heading' : 'body';
+    if (!fx.locks.includes(slot)) fx.locks = [...fx.locks, slot];
+    fxSet(s);
+  }
+
+  // Example designs, built at a fixed size and scaled to fit.
+
+  function fxDesign(s, layout) {
+    const h = byId(s.headingId), b = byId(s.bodyId), hw = s.headingWeight, bw = s.bodyWeight, b6 = nearest(b, 600), b5 = nearest(b, 500);
+    const T = (f, text, size, w, extra = '') => ff(f, text, size, w, false, extra);
+    const pill = (text, cls, w = b6) => `<span class="fx-pill ${cls}">${T(b, text, 15, w)}</span>`;
+    const c = s.colors;
+    const vars = `--fx-bg:${c.background};--fx-surface:${c.surface};--fx-text:${c.text};--fx-muted:${c.muted};--fx-accent:${c.accent};--fx-on:${c.onAccent}`;
+    const [W, H] = DESIGN[layout];
+    const open = cls => `<div class="fx-design ${cls}" style="${vars};width:${W}px;height:${H}px">`;
+    if (layout === 'poster') {
+      return open('fx-poster') + '<i class="p1"></i><i class="p2"></i><div class="fx-poster-in">' +
+        `<div class="fx-row">${T(b, 'VOL. 07', 14, b6, 'letter-spacing:2px')}${T(b, 'OCT 24 – 26', 14, b6, 'letter-spacing:2px')}</div>` +
+        '<div class="fx-grow"></div>' +
+        `<h2>${T(h, 'Form & Color', 104, hw, 'line-height:.98')}</h2>` +
+        `<p>${T(b, 'A three-day festival of type, color and graphic design.', 21, bw, 'color:var(--fx-muted);line-height:1.4')}</p>` +
+        '<i class="bar"></i><div class="fx-facts">' +
+        [['Venue', 'Palais des Arts'], ['Talks', '28 speakers'], ['Tickets', 'formandcolor.fest']].map(([k, v]) =>
+          `<div>${T(b, k.toUpperCase(), 11, b6, 'letter-spacing:1.6px;color:var(--fx-muted)')}${T(b, v, 16, b5)}</div>`).join('') +
+        '</div></div></div>';
+    }
+    if (layout === 'app') {
+      const tasks = [['Review color palette', '10:00'], ['Pick type pairing', '11:30'], ['Share with the team', '14:00']].map(([t, time]) =>
+        `<div class="fx-task"><i></i>${T(b, t, 15, bw)}<span class="fx-grow"></span>${T(b, time, 13, bw, 'color:var(--fx-muted)')}</div>`).join('');
+      return open('fx-app') +
+        `<div class="fx-phone"><div class="fx-row">${T(b, '9:41', 14, b6)}<span class="fx-battery"></span></div>` +
+        `${T(b, 'Tuesday, 14 October', 13, bw, 'color:var(--fx-muted)')}` +
+        `<h3>${T(h, 'Good morning', 32, hw, 'line-height:1.1')}</h3>` +
+        `<div class="fx-card"><div class="fx-row">${T(b, 'Today’s focus', 13, b6, 'color:var(--fx-muted)')}${T(b, '3 of 5', 13, b6, 'color:var(--fx-accent)')}</div>` +
+        `<div class="fx-progress"><i></i></div>${T(h, 'Finish the brand guidelines', 18, hw, 'line-height:1.2')}</div>` +
+        tasks + '<span class="fx-grow"></span>' +
+        `<span class="fx-pill fill wide">${T(b, 'Add a task', 16, b6)}</span></div>` +
+        `<div class="fx-app-copy">${T(b, 'NORTHWIND', 13, b6, 'letter-spacing:2px;color:var(--fx-accent)')}` +
+        `<h2>${T(h, 'Plan less. Make more.', 52, hw, 'line-height:1.08')}</h2>` +
+        `<p>${T(b, 'A calm daily planner for designers, with your tasks, files and feedback in one place.', 18, bw, 'color:var(--fx-muted);line-height:1.5')}</p>` +
+        `<div class="fx-buttons">${pill('Download', 'fill')}${pill('Learn more', 'soft', b5)}</div></div></div>`;
+    }
+    return open('fx-web') +
+      `<header class="fx-nav"><span class="fx-logo"><i></i>${T(h, 'Northwind', 21, hw)}</span>` +
+      `<nav>${['Work', 'Studio', 'Journal', 'About'].map(x => T(b, x, 15, bw, 'color:var(--fx-muted)')).join('')}</nav>${pill('Contact', 'ink')}</header>` +
+      '<div class="fx-hero"><div class="fx-copy">' +
+      `${T(b, 'INDEPENDENT DESIGN STUDIO', 12.5, b6, 'letter-spacing:2px;color:var(--fx-accent)')}` +
+      `<h2>${T(h, 'Ideas that look as good as they work', 58, hw, 'line-height:1.06')}</h2>` +
+      `<p>${T(b, 'We help brands find their voice with identity, websites and products people enjoy using.', 18, bw, 'color:var(--fx-muted);line-height:1.5')}</p>` +
+      `<div class="fx-buttons">${pill('Start a project', 'fill')}${pill('See our work', 'outline', b5)}</div></div>` +
+      `<div class="fx-visual"><i class="c1"></i><i class="c2"></i><div class="fx-stat">${T(h, '120+', 46, hw)}${T(b, 'projects shipped since 2016', 14, bw, 'color:var(--fx-muted)')}</div></div></div>` +
+      `<footer class="fx-logos">${T(b, 'Trusted by', 13, bw, 'color:var(--fx-muted)')}${['LUMEN', 'ATLAS', 'Kinfolk', 'Oberon'].map(x => T(h, x, 17, hw, 'color:var(--fx-muted)')).join('')}</footer></div>`;
+  }
+
+  function fitStage() {
+    const stage = $('#fxStage'), inner = stage && $('.fx-scale', stage);
+    if (!inner) return;
+    const [W, H] = DESIGN[fx.layout];
+    const maxW = stage.clientWidth;
+    const scale = Math.min(maxW / W, fx.layout === 'poster' ? Math.min(760, innerHeight * 0.8) / H : 1.4);
+    inner.style.transform = `scale(${scale})`;
+    inner.style.left = `${Math.max(0, (maxW - W * scale) / 2)}px`;
+    stage.style.height = `${Math.round(H * scale)}px`;
+  }
+
+  function renderStage(s) {
+    const [W, H] = DESIGN[fx.layout];
+    $('#fxStage').classList.toggle('poster', fx.layout === 'poster');
+    $('#fxStage').innerHTML = `<div class="fx-scale" style="width:${W}px;height:${H}px">${fxDesign(s, fx.layout)}</div>`;
+    fitStage();
+    $$('#fxStage .ff.loading').forEach(reveal);
+  }
+
+  function renderFusion() {
+    const s = fx.style;
+    if (!fxValid(s)) return;
+    renderStage(s);
+    $('#fxName').textContent = fxName(s);
+    $('#fxFonts').textContent = fxFontsLabel(s);
+    $('#fxMood').value = fx.mood;
+    $('#fxSnap').checked = fx.snap;
+    $('#fxTones').innerHTML = TONES.map(([k, n]) => `<button type="button" class="fchip" data-tone="${k}" aria-pressed="${fx.tone === k}">${n}</button>`).join('');
+    $('#fxLayouts').innerHTML = LAYOUTS.map(([k, n]) => `<button type="button" class="fchip" data-layout="${k}" aria-pressed="${fx.layout === k}">${n}</button>`).join('');
+    $('#fxUndo').disabled = !fxHistory.past.length;
+    $('#fxRedo').disabled = !fxHistory.future.length;
+    const isSaved = fx.saved.some(x => sameStyle(x, s));
+    $('#fxSave').innerHTML = icon(isSaved ? 'starFill' : 'star', 16) + `<span>${isSaved ? 'Saved' : 'Save style'}</span>`;
+    $('#fxSave').disabled = isSaved;
+    renderFusionSlots();
+  }
+
+  function renderFusionSlots() {
+    const s = fx.style;
+    if (!fxValid(s)) return;
+    $('#fxSlots').innerHTML = ROLES.map(([role, title, usage]) => {
+      const hex = s.colors[role], lockable = LOCKABLE.includes(role), locked = fx.locks.includes(role);
+      const m = pp().nearest(hex, 1, 'coated')[0];
+      return `<div class="fx-slot" title="${esc(usage)}">` +
+        `<label class="fx-swatch" style="--c:${hex};--ink:${Col.readableOn(Col.hexToRgb(hex))}">` +
+        (lockable ? `<input type="color" value="${hex.toLowerCase()}" data-role="${role}" aria-label="Change ${title}">` : '') +
+        `<span class="mono">${hex}</span></label>` +
+        (lockable ? `<button type="button" class="fx-lock" data-lock="${role}" aria-pressed="${locked}" title="${locked ? 'Locked: Generate keeps it. Click to unlock.' : 'Lock to keep it when generating'}">${icon(locked ? 'lock' : 'unlock', 14)}</button>` : '') +
+        `<b>${title}</b>` +
+        (lockable ? `<input class="fx-hex input mono" value="${hex}" data-role="${role}" maxlength="7" spellcheck="false" aria-label="${title} hex">`
+          : '<span class="hint">Follows the others</span>') +
+        `<span class="hint">${m && m.d < 0.5 ? '' : '≈ '}PANTONE ${esc(m ? m.s.code : '')}</span></div>`;
+    }).join('');
+
+    $('#fxFontSlots').innerHTML = [['heading', 'Heading font', s.headingId, s.headingWeight], ['body', 'Body font', s.bodyId, s.bodyWeight]].map(([slot, label, id, w]) => {
+      const f = byId(id), locked = fx.locks.includes(slot);
+      return `<div class="fx-font"><span class="fx-aa" style="background:${s.colors.background};color:${s.colors.text}">${ff(f, 'Aa', 40, w)}</span>` +
+        `<div class="fx-font-info"><span class="hint">${label}</span>` +
+        `<input class="input" list="fontNames" value="${esc(f.family)}" data-font="${slot}" spellcheck="false" autocomplete="off" aria-label="${label}">` +
+        `<span class="hint">Weight ${w} · ${CATS[f.cat]} · ${SOURCES[f.src]}</span></div>` +
+        `<button type="button" class="icon-btn fx-lock" data-lock="${slot}" aria-pressed="${locked}" title="${locked ? 'Locked: Generate keeps it. Click to unlock.' : 'Lock to keep it when generating'}">${icon(locked ? 'lock' : 'unlock', 16)}</button></div>`;
+    }).join('');
+
+    $('#fxChecks').innerHTML = fxChecks(s).map(([label, r, need]) =>
+      `<div class="fx-check ${r >= need ? 'ok' : 'bad'}" title="${r >= need ? 'Readable' : `Below ${need}:1, hard to read for some people`}">` +
+      `<span class="dot" aria-hidden="true">${r >= need ? '✓' : '!'}</span><div><span class="hint">${label}</span><b>${r.toFixed(1)} : 1 · ${gradeOf(r)}</b></div></div>`).join('');
+
+    const list = fx.saved.filter(fxValid);
+    $('#fxSavedWrap').hidden = !list.length;
+    $('#fxSaved').innerHTML = list.map(x =>
+      `<div class="fx-saved-card"><button type="button" data-open="${x.id}" aria-label="Open ${esc(fxName(x))}">` +
+      `<span class="sw" style="background:${x.colors.background};color:${x.colors.text}">${ff(byId(x.headingId), 'Aa', 30, x.headingWeight)}<i style="background:${x.colors.accent}"></i></span>` +
+      `<b>${esc(fxName(x))}</b><span class="hint">${esc(fxFontsLabel(x))}</span></button>` +
+      `<button type="button" class="icon-btn del" data-del="${x.id}" title="Remove" aria-label="Remove saved style">${icon('x', 14)}</button></div>`).join('');
+    $$('#fxFontSlots .ff.loading, #fxSaved .ff.loading').forEach(reveal);
+  }
+
+  async function showFusion() {
+    $('#fxMood').innerHTML = Object.entries(MOODS).map(([k, n]) => `<option value="${k}">${n}</option>`).join('');
+    $('#fxGenerate').innerHTML = `${icon('sparkles')}<span>Generate</span><kbd class="hide-sm">Space</kbd>`;
+    $('#fxUndo').innerHTML = icon('undo');
+    $('#fxRedo').innerHTML = icon('redo');
+    $('#fxCss').innerHTML = icon('code', 16) + '<span>Copy CSS</span>';
+    $('#fxPalette').innerHTML = icon('plus', 16) + '<span>Save colors as palette</span>';
+    $('#fxScale').innerHTML = icon('scale', 16) + '<span>Use fonts in Type scale</span>';
+    fx.saved = fx.saved.filter(fxValid);
+    if (!fxValid(fx.style)) fxSet(fxGenerate(null, [], fx.mood, fx.tone, fx.snap), false);
+    else renderFusion();
+  }
+
+  function fusionKey(action) {
+    if (current !== 'fusion' || !FONTS.length || !fx.style) return;
+    if (action === 'generate') fxNew();
+    if (action === 'undo') fxStep(true);
+    if (action === 'redo') fxStep(false);
+  }
+
+  function bindFusion() {
+    $('#fxGenerate').addEventListener('click', fxNew);
+    $('#fxMood').addEventListener('change', e => { fx.mood = e.target.value; fxNew(); });
+    $('#fxSnap').addEventListener('change', e => { fx.snap = e.target.checked; fxNew(); });
+    $('#fxTones').addEventListener('click', e => {
+      const b = e.target.closest('[data-tone]');
+      if (b) { fx.tone = b.dataset.tone; fxNew(); }
+    });
+    $('#fxLayouts').addEventListener('click', e => {
+      const b = e.target.closest('[data-layout]');
+      if (b) { fx.layout = b.dataset.layout; persist(); renderFusion(); }
+    });
+    $('#fxUndo').addEventListener('click', () => fxStep(true));
+    $('#fxRedo').addEventListener('click', () => fxStep(false));
+    addEventListener('resize', () => { if (current === 'fusion') fitStage(); });
+
+    const slots = $('#fxSlots');
+    slots.addEventListener('click', e => {
+      const l = e.target.closest('[data-lock]');
+      if (l) { e.preventDefault(); fxToggleLock(l.dataset.lock); }
+    });
+    // Live preview while the color picker is open; the change is kept when it closes.
+    slots.addEventListener('input', e => {
+      const t = e.target;
+      if (t.type !== 'color') return;
+      const preview = fxDerive({ ...fx.style, colors: { ...fx.style.colors, [t.dataset.role]: t.value.toUpperCase() } });
+      renderStage(preview);
+      t.closest('.fx-swatch').style.setProperty('--c', t.value);
+    });
+    slots.addEventListener('change', e => {
+      const t = e.target;
+      if (t.type === 'color') fxSetColor(t.dataset.role, t.value.toUpperCase());
+      else if (t.classList.contains('fx-hex')) {
+        const hex = Col.parseHex(t.value);
+        if (hex) fxSetColor(t.dataset.role, hex.toUpperCase()); else t.value = fx.style.colors[t.dataset.role];
+      }
+    });
+    $('#fxFontSlots').addEventListener('click', e => {
+      const l = e.target.closest('[data-lock]');
+      if (l) fxToggleLock(l.dataset.lock);
+    });
+    $('#fxFontSlots').addEventListener('change', e => {
+      const t = e.target.closest('[data-font]');
+      if (t && !chooseFont(t, f => fxSetFont(t.dataset.font === 'heading', f))) renderFusionSlots();
+    });
+
+    $('#fxSave').addEventListener('click', () => {
+      if (!fx.style || fx.saved.some(x => sameStyle(x, fx.style))) return;
+      fx.saved = [{ ...fx.style, id: pp().uid() }, ...fx.saved].slice(0, 40);
+      persist();
+      renderFusion();
+      pp().toast('Saved this style below');
+    });
+    $('#fxCss').addEventListener('click', () => fx.style && pp().copyText(fxCSS(fx.style), 'CSS'));
+    $('#fxPalette').addEventListener('click', () => {
+      if (!fx.style) return;
+      pp().addPalette(fxName(fx.style), ROLES.map(([k]) => {
+        const m = pp().nearest(fx.style.colors[k], 1, 'coated')[0];
+        return { hex: fx.style.colors[k], sid: m && m.d < 0.5 ? m.s.id : null };
+      }));
+    });
+    $('#fxScale').addEventListener('click', () => {
+      if (!fx.style) return;
+      st.scale.headingId = fx.style.headingId;
+      st.scale.bodyId = fx.style.bodyId;
+      persist();
+      pp().go('scale');
+    });
+    $('#fxSaved').addEventListener('click', e => {
+      const del = e.target.closest('[data-del]');
+      if (del) { fx.saved = fx.saved.filter(x => x.id !== del.dataset.del); persist(); renderFusion(); return; }
+      const open = e.target.closest('[data-open]');
+      const x = open && fx.saved.find(y => y.id === open.dataset.open);
+      if (x) fxSet({ ...x });
+    });
+  }
+
   // ---------- Events ----------
 
   function chooseFont(input, apply) {
@@ -593,6 +1006,7 @@
   function bind() {
     if (bound) return;
     bound = true;
+    bindFusion();
     let timer = 0;
     $('#fontSearch').addEventListener('input', e => {
       clearTimeout(timer);
@@ -744,7 +1158,8 @@
       renderScaleControls();
       renderScale();
     }
+    if (view === 'fusion') showFusion();
   }
 
-  window.TypeStudio = { show };
+  window.TypeStudio = { show, fusionKey };
 })();
