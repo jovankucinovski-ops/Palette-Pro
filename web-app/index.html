@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Palette Pro</title>
-  <meta name="description" content="A personal color library: browse Pantone-style swatches, build and save palettes, and match any color to its nearest Pantone.">
+  <meta name="description" content="Color and type palettes for designers: browse Pantone-style swatches, build and save palettes, match any color to its nearest Pantone, and find free fonts, pairings and type scales.">
   <meta name="color-scheme" content="light dark">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="icon" href="icon-32.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css?v=1.2">
   <script>
     try {
       // Storage keys keep the app's original name so saved data stays where it is.
@@ -31,6 +31,9 @@
       <a href="#builder" data-view="builder">Palette</a>
       <a href="#saved" data-view="saved">My palettes <span class="count" id="savedCount"></span></a>
       <a href="#match" data-view="match">Match</a>
+      <a href="#fonts" data-view="fonts">Fonts</a>
+      <a href="#pairing" data-view="pairing">Pairing</a>
+      <a href="#scale" data-view="scale">Type scale</a>
     </nav>
     <button class="icon-btn" id="themeBtn" type="button"></button>
   </header>
@@ -202,7 +205,119 @@
         </section>
       </div>
     </section>
+
+    <!-- Fonts -->
+    <section class="view" id="view-fonts" hidden>
+      <div class="lib-controls">
+        <div class="lib-row">
+          <label class="search">
+            <span class="sr">Search fonts</span>
+            <span class="search-icon" data-icon="search"></span>
+            <input id="fontSearch" type="search" placeholder="Search fonts or designers" autocomplete="off" spellcheck="false">
+            <kbd class="hide-sm">/</kbd>
+          </label>
+          <label class="select">
+            <span class="sr">Sort</span>
+            <select id="fontSort">
+              <option value="popular">Most popular</option>
+              <option value="name">Name</option>
+              <option value="newest">Newest</option>
+            </select>
+          </label>
+        </div>
+        <div class="filter-row" id="fontFilters" role="group" aria-label="Collection"></div>
+        <div class="filter-row" id="fontCats" role="group" aria-label="Style"></div>
+        <div class="font-preview-row">
+          <input id="fontSample" class="input" placeholder="Type your own preview text" spellcheck="false" aria-label="Preview text">
+          <label class="size-field"><span class="sr">Preview size</span>
+            <input id="fontSize" type="range" min="16" max="96" step="2">
+            <output id="fontSizeOut"></output>
+          </label>
+        </div>
+      </div>
+      <p class="type-status hint" hidden></p>
+      <p class="result-count" id="fontCount" aria-live="polite"></p>
+      <div class="font-grid" id="fontGrid"></div>
+      <div class="sentinel" id="fontSentinel"></div>
+      <div class="empty" id="fontEmpty" hidden>
+        <p class="empty-title">No fonts match</p>
+        <p>Try a different search or style.</p>
+      </div>
+      <div class="empty" id="fontLocal" hidden>
+        <p class="empty-title">Fonts on this computer</p>
+        <p id="fontLocalNote"></p>
+        <button class="btn primary" type="button" id="fontLocalBtn">Show my fonts</button>
+      </div>
+    </section>
+
+    <!-- Pairing -->
+    <section class="view" id="view-pairing" hidden>
+      <div class="section-head">
+        <div>
+          <h1>Pairing</h1>
+          <p class="hint" id="pairIntro"></p>
+        </div>
+        <div class="head-actions">
+          <button class="btn primary" type="button" id="pairNew"><span data-icon="refresh"></span><span>More ideas</span></button>
+        </div>
+      </div>
+      <div class="pair-controls">
+        <label class="field"><span>Heading font</span>
+          <span class="row">
+            <input id="pairHeading" class="input" list="fontNames" placeholder="Explore (any font)" spellcheck="false" autocomplete="off">
+            <button class="btn" type="button" id="pairExplore" title="Explore different headline fonts">Explore</button>
+          </span>
+        </label>
+        <label class="field"><span>Mood</span><select id="pairMood"></select></label>
+        <label class="field grow"><span>Headline</span><input id="pairHeadline" class="input" maxlength="80" spellcheck="false"></label>
+      </div>
+      <p class="hint pair-hint" id="pairHint"></p>
+      <p class="type-status hint" hidden></p>
+      <div class="pair-grid" id="pairGrid"></div>
+    </section>
+
+    <!-- Type scale -->
+    <section class="view" id="view-scale" hidden>
+      <div class="section-head">
+        <div>
+          <h1>Type scale</h1>
+          <p class="hint" id="scaleSub"></p>
+        </div>
+      </div>
+      <p class="type-status hint" hidden></p>
+      <div class="scale-layout">
+        <section class="panel scale-controls" aria-label="Scale settings">
+          <label class="field"><span>Heading font</span><input id="scaleHeading" class="input" list="fontNames" spellcheck="false" autocomplete="off"></label>
+          <label class="field"><span>Body font</span><input id="scaleBody" class="input" list="fontNames" spellcheck="false" autocomplete="off"></label>
+          <button class="btn" type="button" id="scaleUsePair" hidden></button>
+          <label class="field"><span>Base size (px)</span><input id="scaleBase" class="input" type="number" min="12" max="24" step="1"></label>
+          <label class="field"><span>Ratio</span><select id="scaleRatio"></select></label>
+          <p class="hint" id="scaleAdvice"></p>
+          <label class="field"><span>Body line height <output id="scaleLhOut"></output></span><input id="scaleLh" type="range" min="1.3" max="1.8" step="0.05"></label>
+          <label class="field"><span>Units</span>
+            <select id="scaleUnit"><option value="rem">rem</option><option value="px">px</option></select>
+          </label>
+          <p class="hint">Body text reads best at 1.4–1.6 line height. Headings get tighter line height and letter spacing as they grow. rem values assume a 16px root.</p>
+        </section>
+        <div class="scale-main">
+          <section class="panel scale-table" id="scaleRows" aria-label="Scale steps"></section>
+          <h3>Sample page</h3>
+          <article class="paper scale-page" id="scalePage"></article>
+          <section class="panel" aria-labelledby="scaleExportTitle">
+            <div class="panel-head"><h2 id="scaleExportTitle">Export</h2></div>
+            <div class="filter-row" id="scaleFormats" role="group" aria-label="Format"></div>
+            <div class="export-body"><pre id="scaleCode"></pre></div>
+            <div class="row">
+              <button class="btn" type="button" id="scaleCopy">Copy</button>
+              <button class="btn primary" type="button" id="scaleDownload">Download</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
   </main>
+
+  <datalist id="fontNames"></datalist>
 
   <aside class="tray" id="tray" aria-label="Current palette">
     <div class="tray-swatches" id="traySwatches"></div>
@@ -257,11 +372,32 @@
     </div>
   </dialog>
 
+  <dialog id="fontDlg" class="modal wide" aria-labelledby="fontDlgTitle">
+    <div class="modal-head">
+      <h2 id="fontDlgTitle"></h2>
+      <button class="icon-btn" type="button" data-close aria-label="Close"></button>
+    </div>
+    <div class="font-detail" id="fontDetail"></div>
+  </dialog>
+
+  <dialog id="pairDlg" class="modal wide" aria-labelledby="pairDlgTitle">
+    <div class="modal-head">
+      <h2 id="pairDlgTitle"></h2>
+      <button class="icon-btn" type="button" data-close aria-label="Close"></button>
+    </div>
+    <div class="pair-detail" id="pairDetail"></div>
+    <div class="modal-foot">
+      <button class="btn" type="button" id="pairCopy">Copy CSS</button>
+      <button class="btn primary" type="button" id="pairScale">Use in type scale</button>
+    </div>
+  </dialog>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="js/data.js"></script>
-  <script src="js/color.js"></script>
-  <script src="js/exporters.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/data.js?v=1.2"></script>
+  <script src="js/color.js?v=1.2"></script>
+  <script src="js/exporters.js?v=1.2"></script>
+  <script src="js/type.js?v=1.2"></script>
+  <script src="js/app.js?v=1.2"></script>
 </body>
 </html>
