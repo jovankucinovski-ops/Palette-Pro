@@ -69,6 +69,13 @@ It needs macOS 14 or later. The Command Line Tools are enough; you don't need fu
 - Specs: HEX, RGB, CMYK, Pantone C and U, 50–900 tint ramps for UI, and accessible color pairings.
 - Export a one-page **brand sheet PDF**, design tokens, or swatches.
 
+**Fusion** (sidebar › Create, ⌘9)
+- Press `Space` for a new combination of colors and fonts: background, surface, text, secondary text, accent and on-accent colors, plus a heading and body font.
+- See it on a real design: a website, a poster or an app screen. Choose a mood (editorial, modern, elegant, friendly, corporate, bold) and light, dark or colored pages.
+- Lock any color or font and Generate keeps it. Click a color to change it or a font to pick another one; `⌘Z` goes back.
+- Every combination is checked for WCAG contrast (text, secondary text, accent and button text). Save the ones you like.
+- **Export**: copy the CSS (colors and fonts), save the colors as a palette, or use the fonts in Type Scale.
+
 **Fonts** (sidebar › Type)
 - 1,500+ free font families: Google Fonts, Fontshare and independent open-source fonts, plus everything installed on your Mac.
 - Collections: Designer Picks, Google Fonts, Fontshare, Open Source, On This Mac and Favorite Fonts. Filter by style (sans, serif, slab, display, script, mono), search by name or designer, sort by popularity, name or newest.
@@ -101,7 +108,8 @@ It needs macOS 14 or later. The Command Line Tools are enough; you don't need fu
 | --- | --- |
 | `⌘1`–`⌘5` | Library, Palette, Brand Studio, My Palettes, Match |
 | `⌘6`–`⌘8` | Fonts, Pairing, Type Scale |
-| `Space` / `⌘G` | Generate (Palette) |
+| `⌘9` | Fusion |
+| `Space` / `⌘G` | Generate (Palette); `Space` also generates in Fusion |
 | `⌥⌘N` | Add a color |
 | `⌘S` / `⌘E` | Save / Export palette |
 | `⇧⌘I` | Import colors |
@@ -127,6 +135,7 @@ Sources/PalettePro/
   Views/    library, inspector, palette editor, My Palettes, Match, sheets
   Brand/    Brand Studio engine, mockups, brand sheet PDF
   Type/     font catalogue and downloads, pairing engine, type scale, Fonts/Pairing/Type Scale views
+  Fusion/   colors + fonts generator, examples (website, poster, app) and controls
 scripts/    build-app.sh, make-dmg.sh, make-icon.swift (draws the icon at every size),
             update-fonts.py (refreshes the bundled font catalogue)
 Resources/  Info.plist, AppIcon.png (icon preview)

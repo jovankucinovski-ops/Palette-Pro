@@ -12,6 +12,17 @@ enum SnapshotRunner {
     static func runIfRequested(_ model: AppModel) {
         guard let dir = directory else { return }
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        // PALETTE_PRO_PASS=fusion runs only the Fusion checks (quicker, and fewer windows popping up).
+        if ProcessInfo.processInfo.environment["PALETTE_PRO_PASS"] == "fusion" {
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(1.5))
+                NSApp.activate(ignoringOtherApps: true)
+                NSApp.windows.first { $0.isVisible && $0.canBecomeMain }?.setContentSize(NSSize(width: 1440, height: 900))
+                await fusionPass(model, dir)
+                NSApp.terminate(nil)
+            }
+            return
+        }
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(1.5))
             // A second copy launched from the command line may not be brought forward; show its window.

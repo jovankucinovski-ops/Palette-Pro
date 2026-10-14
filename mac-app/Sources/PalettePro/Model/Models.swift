@@ -65,10 +65,12 @@ struct PersistedState: Codable {
     var settings: AppSettings
     var brand: BrandSettings?
     var typography: TypeSettings?
+    var fusion: FusionSettings?
 
-    init(palettes: [Palette], favorites: [String], current: WorkingPalette, settings: AppSettings, brand: BrandSettings?, typography: TypeSettings?) {
+    init(palettes: [Palette], favorites: [String], current: WorkingPalette, settings: AppSettings, brand: BrandSettings?,
+         typography: TypeSettings?, fusion: FusionSettings?) {
         self.palettes = palettes; self.favorites = favorites; self.current = current; self.settings = settings
-        self.brand = brand; self.typography = typography
+        self.brand = brand; self.typography = typography; self.fusion = fusion
     }
 
     init(from decoder: Decoder) throws {
@@ -80,12 +82,13 @@ struct PersistedState: Codable {
         settings = (try? c.decode(AppSettings.self, forKey: .settings)) ?? AppSettings()
         brand = try? c.decode(BrandSettings.self, forKey: .brand)
         typography = try? c.decode(TypeSettings.self, forKey: .typography)
+        fusion = try? c.decode(FusionSettings.self, forKey: .fusion)
     }
 }
 
 enum Destination: String, CaseIterable, Identifiable, Hashable {
     // Order sets the ⌘1… shortcuts; new sections go at the end so existing shortcuts stay the same.
-    case library, builder, brand, saved, match, fonts, pairing, scale
+    case library, builder, brand, saved, match, fonts, pairing, scale, fusion
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -97,6 +100,7 @@ enum Destination: String, CaseIterable, Identifiable, Hashable {
         case .fonts: "Fonts"
         case .pairing: "Pairing"
         case .scale: "Type Scale"
+        case .fusion: "Fusion"
         }
     }
     var symbol: String {
@@ -109,6 +113,7 @@ enum Destination: String, CaseIterable, Identifiable, Hashable {
         case .fonts: "textformat"
         case .pairing: "rectangle.on.rectangle"
         case .scale: "textformat.size"
+        case .fusion: "wand.and.stars"
         }
     }
 }

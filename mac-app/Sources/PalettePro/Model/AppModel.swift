@@ -54,6 +54,7 @@ final class AppModel {
 
     let brand = BrandModel()
     let typography = TypeModel()
+    let fusion = FusionModel()
 
     @ObservationIgnored weak var undoManager: UndoManager?
     @ObservationIgnored var draggingColorID: UUID?
@@ -73,6 +74,7 @@ final class AppModel {
             settings = state.settings
             if let b = state.brand { brand.restore(b) }
             if let t = state.typography { typography.restore(t) }
+            if let f = state.fusion { fusion.restore(f) }
         }
         brand.loadSavedLogo()
         NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { [weak self] _ in
@@ -118,7 +120,7 @@ final class AppModel {
 
     func saveNow() {
         let state = PersistedState(palettes: palettes, favorites: favorites.sorted(), current: current, settings: settings,
-                                   brand: brand.settings, typography: typography.settings)
+                                   brand: brand.settings, typography: typography.settings, fusion: fusion.settings)
         do {
             try FileManager.default.createDirectory(at: Self.dataDirectory, withIntermediateDirectories: true)
             try Self.encoder.encode(state).write(to: Self.stateURL, options: .atomic)
@@ -563,17 +565,17 @@ final class AppModel {
 
     // MARK: Keyboard
 
-    /// Space generates in the palette editor unless a text field has focus.
+    /// Space generates in the palette editor and in Fusion unless a text field has focus.
     func installKeyMonitor() {
         guard keyMonitor == nil else { return }
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self else { return event }
             let handled = MainActor.assumeIsolated { () -> Bool in
-                guard self.destination == .builder, event.keyCode == 49,
+                guard self.destination == .builder || self.destination == .fusion, event.keyCode == 49,
                       event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting(.capsLock).isEmpty,
                       let window = NSApp.keyWindow, window.attachedSheet == nil, window.sheetParent == nil,
                       !(window.firstResponder is NSText) else { return false }
-                self.generate()
+                if self.destination == .fusion { self.fusion.generate() } else { self.generate() }
                 return true
             }
             return handled ? nil : event
