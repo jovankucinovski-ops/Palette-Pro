@@ -230,7 +230,7 @@
 
   // ---------- Routing ----------
 
-  const TYPE_VIEWS = ['fonts', 'pairing', 'scale'];
+  const TYPE_VIEWS = ['fonts', 'pairing', 'scale', 'fusion'];
   const VIEWS = ['library', 'builder', 'saved', 'match', ...TYPE_VIEWS];
   const scrollPos = {};
 
@@ -1256,6 +1256,13 @@
         $('#libSearch').focus();
         return;
       }
+      if (state.view === 'fusion') {
+        // Space and ⌘Z drive Fusion, except while typing or when a button has focus (Space presses it).
+        if (typing || t.type === 'checkbox' || (t.closest && t.closest('button, a'))) return;
+        if (e.code === 'Space' && !mod) { e.preventDefault(); window.TypeStudio.fusionKey('generate'); }
+        else if (mod && k === 'z') { e.preventDefault(); window.TypeStudio.fusionKey(e.shiftKey ? 'redo' : 'undo'); }
+        return;
+      }
       if (state.view !== 'builder') return;
       if (mod && k === 's') { e.preventDefault(); savePalette(); return; }
       if (typing || t.type === 'checkbox') return;
@@ -1277,8 +1284,18 @@
 
   // ---------- Init ----------
 
-  // Shared with the Fonts, Pairing and Type Scale sections (js/type.js).
-  window.PP = { toast, copyText, downloadBlob, icon, esc, uid, go, store, host };
+  /** Adds a palette to My palettes without touching the one being edited. */
+  function addPalette(name, colors) {
+    const now = Date.now();
+    const p = { id: uid(), name: (name || DEFAULT_NAME).slice(0, 60), createdAt: now, updatedAt: now,
+      colors: colors.slice(0, MAX_COLORS).map(({ hex, sid }) => ({ hex, sid: sid || null })) };
+    state.palettes = [p, ...state.palettes];
+    savePalettes();
+    toast(`Saved “${p.name}” to My palettes`, { action: { label: 'View', fn: () => go('saved') } });
+  }
+
+  // Shared with the Fonts, Pairing, Type Scale and Fusion sections (js/type.js).
+  window.PP = { toast, copyText, downloadBlob, icon, esc, uid, go, store, host, nearest, addPalette };
 
   function init() {
     $$('[data-icon]').forEach(el => { el.innerHTML = icon(el.dataset.icon); });
