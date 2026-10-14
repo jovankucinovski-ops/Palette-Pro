@@ -198,6 +198,15 @@ enum PairingEngine {
         return s + Double.random(in: 0...1.2)
     }
 
+    /// A well-loved headline font that suits the mood.
+    static func headline(for mood: PairMood, excluding: Set<String> = []) -> FontFamily? {
+        let pool = headlineFaces.filter { mood == .any || $0.1.contains(mood) }.compactMap { catalog.named($0.0) }.filter { !excluding.contains($0.id) }
+        return (pool.isEmpty ? headlineFaces.compactMap { catalog.named($0.0) } : pool).randomElement()
+    }
+
+    /// The weight a headline font is set in for a mood.
+    static func weight(forHeading h: FontFamily, mood: PairMood) -> Int { headingWeight(h, mood) }
+
     private static func headingWeight(_ h: FontFamily, _ mood: PairMood) -> Int {
         if h.category == .display || h.category == .script || h.weights.count <= 2 { return h.regular }
         // Elegant serif headlines look best light or regular; everything else bolder.

@@ -30,16 +30,21 @@ struct RootView: View {
         .sheet(isPresented: $model.showImport) { ImportSheet() }
         .onAppear {
             model.undoManager = undoManager
+            model.fusion.undoManager = undoManager
             model.installKeyMonitor()
             SnapshotRunner.runIfRequested(model)
         }
-        .onChange(of: undoManager) { model.undoManager = undoManager }
+        .onChange(of: undoManager) {
+            model.undoManager = undoManager
+            model.fusion.undoManager = undoManager
+        }
         .onChange(of: model.palettes) { model.scheduleSave() }
         .onChange(of: model.current) { model.scheduleSave() }
         .onChange(of: model.settings) { model.scheduleSave() }
         .onChange(of: model.favorites) { model.scheduleSave() }
         .onChange(of: model.brand.settings) { model.scheduleSave() }
         .onChange(of: model.typography.settings) { model.scheduleSave() }
+        .onChange(of: model.fusion.settings) { model.scheduleSave() }
     }
 
     @ViewBuilder private var detail: some View {
@@ -52,6 +57,7 @@ struct RootView: View {
         case .fonts: FontLibraryView()
         case .pairing: PairingView()
         case .scale: TypeScaleView()
+        case .fusion: FusionView()
         }
     }
 }
@@ -98,6 +104,7 @@ struct Sidebar: View {
             }
             Section("Create") {
                 tool(.builder)
+                tool(.fusion)
                 tool(.brand)
                 tool(.match)
             }

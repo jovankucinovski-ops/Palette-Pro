@@ -27,6 +27,11 @@ struct HelpPage: View {
             "Edit a hex directly, use the color well, or drag colors to reorder. Drop chips in from the Library.",
             "Turn on **Snap to Pantone** to keep every color a real Pantone. The contrast table checks text readability.",
         ]),
+        Topic(title: "Fusion", symbol: "wand.and.stars", points: [
+            "Press **Space** for a new combination of colors and fonts, shown on a website, poster or app.",
+            "**Lock** a color or font you like and Generate keeps it. Click a color or font to change it; ⌘Z goes back.",
+            "Every combination is checked for readable contrast. **Export** copies the CSS, saves the colors as a palette or sends the fonts to Type Scale.",
+        ]),
         Topic(title: "Brand Studio", symbol: "sparkles.rectangle.stack", points: [
             "Type your brand name or add your logo (SVG or PNG). **Ideas** previews it in 12 palettes, repainting the logo in each one.",
             "Click an idea to use it everywhere: logo versions, mockups, specs and the brand sheet.",
@@ -56,7 +61,8 @@ struct HelpPage: View {
     private let shortcuts: [(String, String)] = [
         ("⌘1 – ⌘5", "Library, Palette, Brand Studio, My Palettes, Match"),
         ("⌘6 – ⌘8", "Fonts, Pairing, Type Scale"),
-        ("Space  /  ⌘G", "Generate a palette"),
+        ("⌘9", "Fusion (colors + fonts)"),
+        ("Space  /  ⌘G", "Generate a palette (Space also works in Fusion)"),
         ("⌥⌘N", "Add a color"),
         ("⌘S", "Save palette"),
         ("⌘E", "Export palette"),
